@@ -63,6 +63,17 @@
                     element.setAttribute('src', inputVal);
                 }
             },
+            createsRemoveButton: function($carRow) {
+                var $buttonCol = document.createElement('td');
+                var $button = document.createElement('button');
+                $button.setAttribute('data-js', 'remove-button');
+                $button.textContent = 'Remover';
+                $buttonCol.appendChild($button);
+                $carRow.appendChild($buttonCol);
+                $button.addEventListener('click', function() {
+                    $('[data-js="car-list"]').get(0).removeChild($carRow);
+                });
+            },
             addsNewCar: function addsNewCar(e) {
                 e.preventDefault();
                 var $carRow = document.createElement('tr');
@@ -96,6 +107,7 @@
                     $carCol.appendChild(elem);
                     $carRow.appendChild($carCol);
                 });
+                app.createsRemoveButton($carRow);
                 $('[data-js="car-list"]').get(0).appendChild($carRow);
                 app.clearFormInputs();
             },
