@@ -1,4 +1,4 @@
-(function($) {
+    (function($) {
 
     'use strict';
 
@@ -40,13 +40,83 @@
     var app = (function () {
 
         var $form = $('form');
+        var infoList = [
+            {
+                elem: 'img',
+                dataJs: 'image',
+            },
+            {
+                elem: 'span',
+                dataJs: 'brandModel',
+            },
+            {
+                elem: 'span',
+                dataJs: 'year',
+            },
+            {
+                elem: 'span',
+                dataJs: 'plate',
+            },
+            {
+                elem: 'span',
+                dataJs: 'color',
+            },
+        ];
 
         return {
             init: function init () {
-                this.getCompanyInfo();
+                this.getsCompanyInfo();
+                this.getsCarCatalog();
                 $form.on('submit', this.addsNewCar);
             },
-            clearFormInputs: function clearFormInputs() {
+            assignValuesToElements: function assignValuesToElements(info, elem, value) {
+                if (info.elem === 'span') {
+                    elem.textContent = value;
+                }
+                if (info.elem === 'img') {
+                    elem.setAttribute('src', value);
+                }
+            },
+            getsCarCatalog: function getsCarCatalog() {
+                var ajax = new XMLHttpRequest();
+                ajax.open('GET', 'http://localhost:3000/car/');
+                ajax.send();
+                ajax.addEventListener('readystatechange', function() {
+                    if (this.readyState === 4 && this.status === 200) {
+                        app.addsCarsFromCatalog(JSON.parse(this.responseText));
+                    }
+                });
+            },
+            getsCarAttributes: function getsCarAttributes(car, info, elem) {
+                var dataValue = car[info.dataJs];
+                this.assignValuesToElements(info, elem, dataValue);
+            },
+            addsCarsFromCatalog: function addsCarsFromCatalog(carList) {
+                $('[data-js="car-list"]').get(0).innerHTML = '';
+                carList.forEach(function(car) {
+                    var $carRow = document.createElement('tr');
+                    infoList.forEach(function(info) {
+                        var $carCol = document.createElement('td');
+                        var elem = document.createElement(info.elem);
+                        elem.setAttribute('data-js', info.dataJs);
+                        app.getsCarAttributes(car, info, elem);
+                        $carCol.appendChild(elem);
+                        $carRow.appendChild($carCol);
+                    });
+                    app.createsRemoveButton($carRow);
+                    $('[data-js="car-list"]').get(0).appendChild($carRow);
+                });
+            },
+            addsCarToCatalog: function addsCarToCatalog(carData) {
+                var ajax = new XMLHttpRequest();
+                ajax.open('POST', 'http://localhost:3000/car/');
+                ajax.setRequestHeader(
+                    'Content-Type',
+                    'application/x-www-form-urlencoded'
+                );
+                ajax.send(carData);
+            },
+            clearsFormInputs: function clearsFormInputs() {
                 var inputs = $form.get(0).querySelectorAll('input');
                 inputs.forEach(function(input) {
                     if (input.type !== 'submit') {
@@ -54,14 +124,16 @@
                     }
                 });
             },
-            getsInputValues: function getsInputValues(info, element) {
+            getsInputValues: function getsInputValues(
+                info, index, list, elem, carData
+            ) {
                 var inputVal = $('[data-js="' + info.dataJs + '"]').get(0).value;
-                if (info.elem === 'span') {
-                    element.textContent = inputVal;
+                this.assignValuesToElements(info, elem, inputVal);
+                carData += info.dataJs + '=' + inputVal;
+                if (index < list.length - 1) {
+                    carData += '&';
                 }
-                if (info.elem === 'img') {
-                    element.setAttribute('src', inputVal);
-                }
+                return carData;
             },
             createsRemoveButton: function($carRow) {
                 var $buttonCol = document.createElement('td');
@@ -76,53 +148,35 @@
             },
             addsNewCar: function addsNewCar(e) {
                 e.preventDefault();
+                var carData = '';
                 var $carRow = document.createElement('tr');
-                var infoList = [
-                    {
-                        elem: 'img',
-                        dataJs: 'image',
-                    },
-                    {
-                        elem: 'span',
-                        dataJs: 'brand',
-                    },
-                    {
-                        elem: 'span',
-                        dataJs: 'year',
-                    },
-                    {
-                        elem: 'span',
-                        dataJs: 'plate',
-                    },
-                    {
-                        elem: 'span',
-                        dataJs: 'color',
-                    },
-                ];
-                infoList.forEach(function(info) {
+                infoList.forEach(function(info, index, list) {
                     var $carCol = document.createElement('td');
                     var elem = document.createElement(info.elem);
                     elem.setAttribute('data-js', info.dataJs);
-                    app.getsInputValues(info, elem);
+                    carData = app.getsInputValues(
+                        info, index, list, elem, carData
+                    );
                     $carCol.appendChild(elem);
                     $carRow.appendChild($carCol);
                 });
                 app.createsRemoveButton($carRow);
                 $('[data-js="car-list"]').get(0).appendChild($carRow);
-                app.clearFormInputs();
+                app.clearsFormInputs();
+                app.addsCarToCatalog(carData);
             },
-            handleStateChange: function handleStateChange () {
+            handlesStateChange: function handlesStateChange () {
                 if (this.readyState === 4 && this.status === 200) {
                     var companyData = JSON.parse(this.responseText);
                     $('[data-js="name"]').get(0).textContent = companyData.name;
                     $('[data-js="phone"]').get(0).textContent = companyData.phone;
                 }
             },
-            getCompanyInfo: function getCompanyInfo() {
+            getsCompanyInfo: function getsCompanyInfo() {
                 var ajax = new XMLHttpRequest();
                 ajax.open('GET', 'company.json');
                 ajax.send();
-                ajax.addEventListener('readystatechange', this.handleStateChange);
+                ajax.addEventListener('readystatechange', this.handlesStateChange);
             }
         };
         
