@@ -1,4 +1,4 @@
-    (function($) {
+(function($) {
 
     'use strict';
 
@@ -135,6 +135,15 @@
                 }
                 return carData;
             },
+            removesCarFromCatalog: function removesCarFromCatalog(data) {
+                var ajax = new XMLHttpRequest();
+                ajax.open('DELETE', 'http://localhost:3000/car/');
+                ajax.setRequestHeader(
+                    'Content-Type',
+                    'application/x-www-form-urlencoded'
+                );
+                ajax.send(data);
+            },
             createsRemoveButton: function($carRow) {
                 var $buttonCol = document.createElement('td');
                 var $button = document.createElement('button');
@@ -143,6 +152,9 @@
                 $buttonCol.appendChild($button);
                 $carRow.appendChild($buttonCol);
                 $button.addEventListener('click', function() {
+                    var carPlate = $carRow.querySelector('[data-js="plate"]').textContent;
+                    var data = 'plate=' + carPlate;
+                    app.removesCarFromCatalog(data);
                     $('[data-js="car-list"]').get(0).removeChild($carRow);
                 });
             },
